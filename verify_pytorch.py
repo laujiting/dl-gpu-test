@@ -21,9 +21,9 @@ if __name__ == '__main__':
     print("Start time = "+time.ctime())
     
     # read data
-    inp = np.loadtxt("./dataset/input" , dtype=np.float32)
+    inp = np.loadtxt("./test/input" , dtype=np.float32)
     
-    oup = np.loadtxt("./dataset/output", dtype=np.float32)
+    oup = np.loadtxt("./test/output", dtype=np.float32)
     #inp = inp*[4,100,1,4,0.04,1]
     oup = oup*500
     inp = inp.astype(np.float32)
