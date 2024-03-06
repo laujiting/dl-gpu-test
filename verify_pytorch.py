@@ -15,10 +15,9 @@ if __name__ == '__main__':
     import numpy as np
     import matplotlib.pyplot as plt
     from torch.autograd import Variable
-    import time
+    import datetime
     
-    # print start time
-    print("Start time = "+time.ctime())
+    
     
     # read data
     inp = np.loadtxt("./test/input" , dtype=np.float32)
@@ -61,51 +60,61 @@ if __name__ == '__main__':
             out = self.fc2(out)
             return out
     
-    model = Net(input_size, hidden_size, output_size)
-    
-    # Loss and Optimizer
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)  
-    
-    ###### GPU
-    if torch.cuda.is_available():
-        print("We are using GPU now!!!")
-        model = model.cuda()
-    
-    # Train the Model 
-    for epoch in range(num_epochs):
-        # Convert numpy array to torch Variable
-        if torch.cuda.is_available():
-            inputs  = Variable(torch.from_numpy(x_train).cuda())
-            targets = Variable(torch.from_numpy(y_train).cuda())
+
+    GPU_used = False
+    for i in range(2):
+        model = Net(input_size, hidden_size, output_size)
+        # Loss and Optimizer
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)  
+        ###### GPU
+        start = datetime.datetime.now()
+        # print start time
+        print(f"Start time = {start.strftime("%Y-%m-%d %H:%M:%S")}")
+        if torch.cuda.is_available() and not GPU_used:
+            print("We are using GPU now!!!")
+            model = model.cuda()
         else:
-            inputs  = Variable(torch.from_numpy(x_train))
-            targets = Variable(torch.from_numpy(y_train))
-    
-        # Forward + Backward + Optimize
-        optimizer.zero_grad()  
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
+            print("We are using CPU now!!!")
         
-        if (epoch+1) % 5 == 0:
-            print ('Epoch [%d/%d], Loss: %.8f' 
-                   %(epoch+1, num_epochs, loss.item()))
-    
-    # print end time
-    print("End time = "+time.ctime())
-    
-    # Plot the graph
-    if torch.cuda.is_available():
-        predicted = model(Variable(torch.from_numpy(x_train).cuda())).data.cpu().numpy()
-    else:
-        predicted = model(Variable(torch.from_numpy(x_train))).data.numpy()
-    plt.plot( y_train/500, 'r-', label='Original data')
-    plt.plot( predicted/500,'-', label='Fitted line')
-    #plt.plot(y_train/500, predicted/500,'.', label='Fitted line')
-    plt.legend()
-    plt.show()
-    
-    # Save the Model
-    torch.save(model.state_dict(), 'model.pkl')
+        # Train the Model 
+        for epoch in range(num_epochs):
+            # Convert numpy array to torch Variable
+            if torch.cuda.is_available() and not GPU_used:
+                inputs  = Variable(torch.from_numpy(x_train).cuda())
+                targets = Variable(torch.from_numpy(y_train).cuda())
+            else:
+                inputs  = Variable(torch.from_numpy(x_train))
+                targets = Variable(torch.from_numpy(y_train))
+        
+            # Forward + Backward + Optimize
+            optimizer.zero_grad()  
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+            
+            if (epoch+1) % 5 == 0:
+                print ('Epoch [%d/%d], Loss: %.8f' 
+                    %(epoch+1, num_epochs, loss.item()))
+        
+        # print end time
+        end = datetime.datetime.now()
+        print(f"End time = {end.strftime("%Y-%m-%d %H:%M:%S")}")
+        cost = end - start
+        print(f"Cost time = {cost.seconds} seconds")
+
+        # Plot the graph
+        if torch.cuda.is_available() and not GPU_used:
+            predicted = model(Variable(torch.from_numpy(x_train).cuda())).data.cpu().numpy()
+        else:
+            predicted = model(Variable(torch.from_numpy(x_train))).data.numpy()
+        plt.plot( y_train/500, 'r-', label='Original data')
+        plt.plot( predicted/500,'-', label='Fitted line')
+        #plt.plot(y_train/500, predicted/500,'.', label='Fitted line')
+        # plt.legend()
+        # plt.show()
+        
+        # Save the Model
+        # torch.save(model.state_dict(), 'model.pkl')
+        GPU_used = True
